@@ -34,3 +34,55 @@ jobs:
         uses: dominikh/staticcheck-action@v1
         with:
           install-go: false
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Get dependencies
+        run: |
+          mkdir -p $GOPATH/bin
+          export PATH=$PATH:$GOPATH/bin
+
+      - name: Build
+        run: go build -o prmanager -v .
+
+      - name: Set SSH info
+        env:
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Stop server
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          ssh -i ~/.ssh/id_rsa $HOST screen -XS prmanager quit || true
+          ssh -i ~/.ssh/id_rsa $HOST rm -f /home/prmanager/prmanager
+
+      - name: Transfer executable
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          scp -i ~/.ssh/id_rsa prmanager $HOST:/home/prmanager/prmanager
+
+      - name: Restart server
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          ssh -i ~/.ssh/id_rsa $HOST cd /home/prmanager && ./start.sh
