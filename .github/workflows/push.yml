@@ -85,4 +85,4 @@ jobs:
         env:
           HOST: ${{ secrets.VPS_HOST }}
         run: |
-          ssh -i ~/.ssh/id_rsa $HOST cd /home/prmanager && ./start.sh
+          ssh -i ~/.ssh/id_rsa $HOST "cd /home/prmanager && ./start.sh"
