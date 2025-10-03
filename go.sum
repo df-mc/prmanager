@@ -65,6 +65,8 @@ github.com/sandertv/gophertunnel v1.48.0 h1:FoAKjNxo8VitSRdrkM/jNtxz6gwFTOq/XitW
 github.com/sandertv/gophertunnel v1.48.0/go.mod h1:lmRarAmn25V/+QeiUbUDXeA26bEaNlX1wGEM/rj39ew=
 github.com/sandertv/gophertunnel v1.49.1 h1:Wq6tcdwWhooa/G2dqic3/ZptEvt79glAQQ5a85GSGpI=
 github.com/sandertv/gophertunnel v1.49.1/go.mod h1:WjTvUo02TmvPULY1y5oxxAhZIeH8ew31/LUkSUD6ABw=
+github.com/sandertv/gophertunnel v1.50.0 h1:uoXQBWOD823T8snohPjIkFo+pcYrlIalEmcY2S1FUPM=
+github.com/sandertv/gophertunnel v1.50.0/go.mod h1:WjTvUo02TmvPULY1y5oxxAhZIeH8ew31/LUkSUD6ABw=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
