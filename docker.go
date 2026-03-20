@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"os/exec"
-	"strings"
 )
 
 // Docker is a struct that provides methods to interact with Docker running on the host.
@@ -57,7 +58,7 @@ func (d *Docker) ServerPort(pr string) (uint16, bool, error) {
 // If the server fails to start, it returns an error.
 func (d *Docker) StartServer(pr string) (uint16, bool, error) {
 	name := "pr-" + pr
-	cmd := exec.Command("docker", "run", "-d", "--rm", "--name", name, "--label", "pr="+pr, "-v", "./"+name+":/"+name, "-p", "0:19132/udp", name)
+	cmd := exec.Command("docker", "run", "-d", "--rm", "--name", name, "--label", "pr="+pr, "--storage-opt", "size=256m", "-v", "./"+name+":/"+name, "-p", "0:19132/udp", name)
 	err := cmd.Run()
 	if err != nil {
 		return 0, false, fmt.Errorf("run command '%s': %w", cmd.String(), err)
