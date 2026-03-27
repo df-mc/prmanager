@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -53,14 +55,63 @@ func (d *Docker) ServerPort(pr string) (uint16, bool, error) {
 	return port, true, nil
 }
 
+// mountDiskImage creates a fixed-size ext4 disk image for the PR (if one doesn't already exist) and mounts
+// it at the PR directory. This limits the writable space available to the container.
+func mountDiskImage(pr string) error {
+	name := "pr-" + pr
+	imgPath := name + ".img"
+
+	if _, err := os.Stat(imgPath); err != nil {
+		if err := exec.Command("dd", "if=/dev/zero", fmt.Sprintf("of=%s", imgPath), "bs=1M", "count=256").Run(); err != nil {
+			return fmt.Errorf("create disk image: %w", err)
+		}
+		if err := exec.Command("mkfs.ext4", "-F", imgPath).Run(); err != nil {
+			_ = os.Remove(imgPath)
+			return fmt.Errorf("format disk image: %w", err)
+		}
+	}
+
+	_ = os.MkdirAll(name, 0755)
+	// Unmount first in case it's already mounted from a previous run.
+	_ = exec.Command("umount", name).Run()
+	if err := exec.Command("mount", "-o", "loop", imgPath, name).Run(); err != nil {
+		return fmt.Errorf("mount disk image: %w", err)
+	}
+	return nil
+}
+
+// unmountDiskImage unmounts the disk image for the given PR.
+func unmountDiskImage(pr string) {
+	_ = exec.Command("umount", "pr-"+pr).Run()
+}
+
+// removeDiskImage unmounts and deletes the disk image file for the given PR.
+func removeDiskImage(pr string) {
+	unmountDiskImage(pr)
+	_ = os.Remove("pr-" + pr + ".img")
+}
+
+// unmountAllDiskImages finds and unmounts all PR disk images.
+func unmountAllDiskImages() {
+	matches, _ := filepath.Glob("pr-*.img")
+	for _, img := range matches {
+		name := strings.TrimSuffix(img, ".img")
+		_ = exec.Command("umount", name).Run()
+	}
+}
+
 // StartServer attempts to start a server for the given PR. It runs a Docker container with the specified name
 // and random port mapping. If the server starts successfully, it retrieves the public port and returns it.
 // If the server fails to start, it returns an error.
 func (d *Docker) StartServer(pr string) (uint16, bool, error) {
 	name := "pr-" + pr
-	cmd := exec.Command("docker", "run", "-d", "--rm", "--name", name, "--label", "pr="+pr, "--storage-opt", "size=256m", "-v", "./"+name+":/"+name, "-p", "0:19132/udp", name)
+	if err := mountDiskImage(pr); err != nil {
+		return 0, false, fmt.Errorf("mount disk image: %w", err)
+	}
+	cmd := exec.Command("docker", "run", "-d", "--rm", "--name", name, "--label", "pr="+pr, "-v", "./"+name+":/"+name, "-p", "0:19132/udp", name)
 	err := cmd.Run()
 	if err != nil {
+		unmountDiskImage(pr)
 		return 0, false, fmt.Errorf("run command '%s': %w", cmd.String(), err)
 	}
 	port, found, err := d.ServerPort(pr)
@@ -78,6 +129,7 @@ func (d *Docker) DeleteServer(pr string) {
 	_ = exec.Command("docker", "kill", "--signal=SIGINT", name).Run()
 	_ = exec.Command("docker", "wait", name).Run()
 	_ = exec.Command("docker", "image", "rm", name).Run()
+	removeDiskImage(pr)
 }
 
 // StopServer stops the server for the given PR gracefully by sending a SIGINT signal to the Docker container.
@@ -99,6 +151,7 @@ func (d *Docker) ClearContainers() error {
 			}
 		}
 	}
+	unmountAllDiskImages()
 	return nil
 }
 
