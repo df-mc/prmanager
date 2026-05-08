@@ -8,52 +8,31 @@ jobs:
     steps:
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
-      - name: Set up Go 1.24
-        uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.24
-        id: go
+          go-version-file: go.mod
 
-      - name: Get dependencies
-        run: |
-          mkdir -p $GOPATH/bin
-          export PATH=$PATH:$GOPATH/bin
-
-      - name: Build
-        run: go build -o prmanager_exe -v .
-
-      - name: Vet
-        run: go vet ./...
-
-      - name: Formatting
-        run: test -z $(go fmt ./...)
-
-      - name: Staticcheck
-        uses: dominikh/staticcheck-action@v1
-        with:
-          install-go: false
+      - name: Lint
+        run: make lint
 
   deploy:
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
+    if: github.repository == 'df-mc/prmanager'
     steps:
 
-      - name: Set up Go 1.24
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.24
-        id: go
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
-      - name: Get dependencies
-        run: |
-          mkdir -p $GOPATH/bin
-          export PATH=$PATH:$GOPATH/bin
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Build
         run: go build -o prmanager -v .
