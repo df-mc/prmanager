@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/sandertv/gophertunnel/minecraft"
-	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 	"log/slog"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"github.com/sandertv/gophertunnel/minecraft/text"
 )
 
 // Listener wraps a minecraft.Listener that accepts connections before transferring them to a new destination
@@ -77,11 +78,12 @@ func (l *Listener) handleConnection(c *minecraft.Conn) {
 	// plots server, or it can be a pull request that is running on a random port.
 	var targetPort uint16
 	addr := strings.Split(c.ClientData().ServerAddress, ":")[0]
-	if addr == "df-mc.dev" || addr == "188.166.78.44" {
+	switch addr {
+	case "df-mc.dev", "188.166.78.44":
 		targetPort = 19133
-	} else if addr == "plots.df-mc.dev" {
+	case "plots.df-mc.dev":
 		targetPort = 19134
-	} else {
+	default:
 		// Assuming the address is in the format of a pull request, e.g., "123.df-mc.dev".
 		var regex = `^(\d+)\.df-mc\.dev$`
 		if matches := regexp.MustCompile(regex).FindStringSubmatch(addr); len(matches) > 1 {
